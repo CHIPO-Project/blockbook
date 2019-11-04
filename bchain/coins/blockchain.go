@@ -1,5 +1,4 @@
-package coins
-
+package coins 
 import (
 	"blockbook/bchain"
 	"blockbook/bchain/coins/bch"
@@ -36,6 +35,7 @@ import (
 	"blockbook/bchain/coins/vipstarcoin"
 	"blockbook/bchain/coins/xzc"
 	"blockbook/bchain/coins/zec"
+	"blockbook/bchain/coins/chipo"
 	"blockbook/common"
 	"context"
 	"encoding/json"
@@ -103,6 +103,7 @@ func init() {
 	BlockChainFactories["Divi"] = divi.NewDiviRPC
 	BlockChainFactories["CPUchain"] = cpuchain.NewCPUchainRPC
 	BlockChainFactories["Unobtanium"] = unobtanium.NewUnobtaniumRPC
+	BlockChainFactories["CHIPO"] = chipo.NewChipoRPC
 }
 
 // GetCoinNameFromConfig gets coin name and coin shortcut from config file
