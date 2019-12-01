@@ -12,24 +12,16 @@ import (
 
 	"math/big"
 
-	"github.com/martinboehm/btcd/blockchain"
-
 	"github.com/juju/errors"
 	"github.com/martinboehm/btcd/wire"
 	"github.com/martinboehm/btcutil/chaincfg"
 )
 
-// magic numbers
 const (
 	MainnetMagic wire.BitcoinNet = 0xb3a5d7a1
 	TestnetMagic wire.BitcoinNet = 0xd733a1d3
-
-	// Zerocoin op codes
-	OP_ZEROCOINMINT  = 0xc1
-	OP_ZEROCOINSPEND = 0xc2
 )
 
-// chain parameters
 var (
 	MainNetParams chaincfg.Params
 	TestNetParams chaincfg.Params
@@ -84,7 +76,7 @@ func GetChainParams(chain string) *chaincfg.Params {
 	case "test":
 		return &TestNetParams
 	default:
-		return &MainNetParams
+	return &MainNetParams
 	}
 }
 
@@ -98,7 +90,8 @@ func (p *ChipoParser) ParseBlock(b []byte) (*bchain.Block, error) {
 		return nil, errors.Annotatef(err, "Deserialize")
 	}
 
-	if h.Version > 3 { //only 1 or 3 
+	if h.Version > 3 {
+		// Skip past AccumulatorCheckpoint which was added in pivx block version 4
 		r.Seek(32, io.SeekCurrent)
 	}
 
@@ -147,16 +140,6 @@ func (p *ChipoParser) ParseTx(b []byte) (*bchain.Tx, error) {
 func (p *ChipoParser) TxFromMsgTx(t *wire.MsgTx, parseAddresses bool) bchain.Tx {
 	vin := make([]bchain.Vin, len(t.TxIn))
 	for i, in := range t.TxIn {
-
-		// extra check to not confuse Tx with single OP_ZEROCOINSPEND input as a coinbase Tx
-		if !isZeroCoinSpendScript(in.SignatureScript) && blockchain.IsCoinBaseTx(t) {
-			vin[i] = bchain.Vin{
-				Coinbase: hex.EncodeToString(in.SignatureScript),
-				Sequence: in.Sequence,
-			}
-			break
-		}
-
 		s := bchain.ScriptSig{
 			Hex: hex.EncodeToString(in.SignatureScript),
 			// missing: Asm,
@@ -205,8 +188,8 @@ func (p *ChipoParser) TxFromMsgTx(t *wire.MsgTx, parseAddresses bool) bchain.Tx 
 	return tx
 }
 
-// ParseTxFromJson parses JSON message containing transaction and returns Tx struct
-func (p *ChipoParser) ParseTxFromJson(msg json.RawMessage) (*bchain.Tx, error) {
+// ParseTxFromJSON parses JSON message containing transaction and returns Tx struct
+func (p *ChipoParser) ParseTxFromJSON(msg json.RawMessage) (*bchain.Tx, error) {
 	var tx bchain.Tx
 	err := json.Unmarshal(msg, &tx)
 	if err != nil {
@@ -232,17 +215,11 @@ func (p *ChipoParser) ParseTxFromJson(msg json.RawMessage) (*bchain.Tx, error) {
 
 // outputScriptToAddresses converts ScriptPubKey to bitcoin addresses
 func (p *ChipoParser) outputScriptToAddresses(script []byte) ([]string, bool, error) {
-	if isZeroCoinSpendScript(script) {
-		return []string{"Zerocoin Spend"}, false, nil
-	}
-	if isZeroCoinMintScript(script) {
-		return []string{"Zerocoin Mint"}, false, nil
-	}
-
 	rv, s, _ := p.BitcoinOutputScriptToAddressesFunc(script)
 	return rv, s, nil
 }
 
+// GetAddrDescForUnknownInput = ???
 func (p *ChipoParser) GetAddrDescForUnknownInput(tx *bchain.Tx, input int) bchain.AddressDescriptor {
 	if len(tx.Vin) > input {
 		scriptHex := tx.Vin[input].ScriptSig.Hex
@@ -255,14 +232,4 @@ func (p *ChipoParser) GetAddrDescForUnknownInput(tx *bchain.Tx, input int) bchai
 
 	s := make([]byte, 10)
 	return s
-}
-
-// Checks if script is OP_ZEROCOINMINT
-func isZeroCoinMintScript(signatureScript []byte) bool {
-	return len(signatureScript) > 1 && signatureScript[0] == OP_ZEROCOINMINT
-}
-
-// Checks if script is OP_ZEROCOINSPEND
-func isZeroCoinSpendScript(signatureScript []byte) bool {
-	return len(signatureScript) >= 100 && signatureScript[0] == OP_ZEROCOINSPEND
 }
