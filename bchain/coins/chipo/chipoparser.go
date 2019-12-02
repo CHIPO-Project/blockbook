@@ -219,7 +219,7 @@ func (p *ChipoParser) outputScriptToAddresses(script []byte) ([]string, bool, er
 	return rv, s, nil
 }
 
-// GetAddrDescForUnknownInput = ???
+// GetAddrDescForUnknownInput
 func (p *ChipoParser) GetAddrDescForUnknownInput(tx *bchain.Tx, input int) bchain.AddressDescriptor {
 	if len(tx.Vin) > input {
 		scriptHex := tx.Vin[input].ScriptSig.Hex
