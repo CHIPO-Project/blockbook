@@ -42,6 +42,12 @@ func Test_GetAddrDescFromAddress_Mainnet(t *testing.T) {
 			want:    "76a914f1684a035088c20e76ece8e4dd79bdead0e1569a88ac",
 			wantErr: false,
 		},
+        {
+            name:    "P2SH1",
+            args:    args{address: "6Ud4CntxKLoD4AEPQSjvRZ5j3cekZ48Hi7"},
+            want:    "a9149c1185a5c5e9fc54612808977ee8f548b2258d3187",
+            wantErr: false,
+        },
 	}
 	parser := NewChipoParser(GetChainParams("main"), &btc.Configuration{})
 
